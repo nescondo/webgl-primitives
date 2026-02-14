@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebGL Primitives</title>
+</head>
+<body>
+    <canvas id="webgl-canvas" width="500" height="500"></canvas>
+<script>
+// Vertex shader source code
+const vertexShaderSource = `
+    attribute vec2 aPosition;
+
+    void main() {
+        gl_Position = vec4(aPosition, 0.0, 1.0); 
+        gl_PointSize = 5.0;
+    }
+`;
+</script>
+<script>
+// Fragment shader source code
+const fragmentShaderSource = `
+    precision mediump float;
+
+    void main() {
+        gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0); // Red color
+    }
+`;
+</script>
+<script type="text/javascript" src="setupShader.js"></script>
+<script>
+
+// Create buffer
+const buffer = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+const aPositionLocation = gl.getAttribLocation(program, 'aPosition');
+gl.vertexAttribPointer(aPositionLocation, 2, gl.FLOAT, false, 0, 0);
+gl.enableVertexAttribArray(aPositionLocation);
+
+// Set up the viewport and clear the canvas
+gl.viewport(0, 0, canvas.width, canvas.height);
+gl.clearColor(0.0, 0.0, 0.0, 1.0);
+gl.clear(gl.COLOR_BUFFER_BIT);
+
+
+function worldToNDC(x, y) {
+    const ndc_x = ((2 * x) / canvas.width) - 1;
+    const ndc_y = -(((2 * y) / canvas.height) - 1);
+
+    return [ndc_x, ndc_y];
+}
+
+function renderPoint(x, y) {
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    const point = new Float32Array([
+        x, y
+    ]);
+
+    gl.bufferData(gl.ARRAY_BUFFER, point, gl.STATIC_DRAW);
+    gl.drawArrays(gl.POINTS, 0, 1);
+}
+
+function render2Points(x1, y1, x2, y2) {
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    const points = new Float32Array([
+        x1, y1,
+        x2, y2
+    ]);
+
+    gl.bufferData(gl.ARRAY_BUFFER, points, gl.STATIC_DRAW);
+    gl.drawArrays(gl.POINTS, 0, 2);
+}
+
+// function render3Points(x1, y1, x2, y2, x3, y3) {
+//     gl.clearColor(0.0, 0.0, 0.0, 1.0);
+//     gl.clear(gl.COLOR_BUFFER_BIT);
+
+//     const points = new Float32Array([
+//         x1, y1,
+//         x2, y2,
+//         x3, y3
+//     ]);
+
+//     gl.bufferData(gl.ARRAY_BUFFER, points, gl.STATIC_DRAW);
+//     gl.drawArrays(gl.POINTS, 0, 3);
+// }
+
+function renderLine(x1, y1, x2, y2) {
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    const line = new Float32Array([
+        x1, y1,
+        x2, y2
+    ]);
+
+    gl.bufferData(gl.ARRAY_BUFFER, line, gl.STATIC_DRAW);
+    gl.drawArrays(gl.LINES, 0, 2);
+}
+
+function renderTriangle(x1, y1, x2, y2, x3, y3) {
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    const triangle = new Float32Array([
+        x1, y1,
+        x2, y2,
+        x3, y3
+    ]);
+
+    gl.bufferData(gl.ARRAY_BUFFER, triangle, gl.STATIC_DRAW);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+
+function renderSquare(x1, y1, x2, y2, x3, y3, x4, y4) {
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    const square = new Float32Array([
+        x1, y1,
+        x2, y2,
+        x3, y3,
+        x4, y4
+    ]);
+
+    gl.bufferData(gl.ARRAY_BUFFER, square, gl.STATIC_DRAW);
+    gl.drawArrays(gl.LINE_LOOP, 0, 4);
+}
+
+let mode = '';
+const rect = canvas.getBoundingClientRect();
+let numClick = 0;
+
+// x-axis coords
+let x1 = 0;
+let x2 = 0;
+let x3 = 0;
+let x4 = 0;
+
+// y-axis coords
+let y1 = 0;
+let y2 = 0;
+let y3 = 0;
+let y4 = 0;
+
+// line points
+// let lineX1 = 0;
+// let lineY1 = 0;
+// let lineX2 = 0;
+// let lineY2 = 0;
+
+// triangle points
+// let triX1 = 0;
+// let triY1 = 0;
+// let triX2 = 0;
+// let triY2 = 0;
+// let triX3 = 0;
+// let triY3 = 0;
+
+document.addEventListener('keydown', (keyEvent) => {
+    const keyName = keyEvent.key;
+    if (keyName === "p") {
+        mode = "p";
+        console.log("pressed p - point drawing mode active");
+        console.log(`mode: ${mode}`);
+    }
+
+    if (keyName === "l") {
+        mode = "l";
+        console.log("pressed l - line drawing mode active");
+        console.log(`mode: ${mode}`);
+    }
+
+    if (keyName === "t") {
+        mode = "t";
+        console.log("pressed t - triangle drawing mode active");
+        console.log(`mode: ${mode}`);
+    }
+
+    if (keyName === "s") {
+        mode = "s";
+        console.log("pressed t - square drawing mode active");
+        console.log(`mode: ${mode}`);
+    }
+});
+
+canvas.addEventListener('mousedown', (mouseEvent) => {
+    const x = mouseEvent.clientX - rect.left;
+    const y = mouseEvent.clientY - rect.top;
+    numClick++;
+    const vertex = worldToNDC(x, y)
+
+    if (mode === "p") {
+        renderPoint(vertex[0], vertex[1]);
+        numClick = 0;
+    }
+
+    if (mode === "l") {
+        if (numClick === 1) {
+            x1 = vertex[0];
+            y1 = vertex[1];
+
+            renderPoint(x1, y1);
+            console.log(`First vertex: ${x1}, ${y1}`);
+        }
+
+        if (numClick === 2) {
+            x2 = vertex[0];
+            y2 = vertex[1];
+
+            console.log(`Second vertex: ${x2}, ${y2}`);
+            renderLine(x1, y1, x2, y2);
+            numClick = 0;
+            x1, y1, x2, y2 = 0;
+        }
+    }
+
+    if (mode === "t") {
+        if (numClick === 1) {
+            x1 = vertex[0];
+            y1 = vertex[1];
+
+            renderPoint(x1, y1);
+            console.log(`First vertex: ${x1}, ${y1}`);
+        }
+
+        if (numClick === 2) {
+            x2 = vertex[0];
+            y2 = vertex[1];
+
+            render2Points(x1, y1, x2, y2);
+            console.log(`Second vertex: ${x2}, ${y2}`);
+        }
+
+        if (numClick === 3) {
+            x3 = vertex[0];
+            y3 = vertex[1];
+            
+            console.log(`Third vertex: ${x3}, ${y3}`);
+            renderTriangle(x1, y1, x2, y2, x3, y3);
+            numClick = 0;
+            x1, x2, x3, y1, y2, y3 = 0;
+        }
+    }
+
+    if (mode === "s") {
+        // TO-DO: user defines only center point of square
+
+
+        // user defines the 4 vertices themselves
+        // if (numClick === 1) {
+        //     x1 = vertex[0];
+        //     y1 = vertex[1];
+
+        //     renderPoint(x1, y1);
+        //     console.log(`First vertex: ${x1}, ${y1}`);
+        // }
+
+        // if (numClick === 2) {
+        //     x2 = vertex[0];
+        //     y2 = vertex[1];
+
+        //     render2Points(x1, y1, x2, y2);
+        //     console.log(`Second vertex: ${x2}, ${y2}`);
+        // }
+
+        // if (numClick === 3) {
+        //     x3 = vertex[0];
+        //     y3 = vertex[1];
+            
+        //     render3Points(x1, y1, x2, y2, x3, y3);
+        //     console.log(`Third vertex: ${x3}, ${y3}`);
+        // }
+
+        // if (numClick === 4) {
+        //     x4 = vertex[0];
+        //     y4 = vertex[1];
+
+        //     console.log(`Fourth vertex: ${x4}, ${y4}`);
+        //     renderSquare(x1, y1, x2, y2, x3, y3, x4, y4);
+        //     numClick = 0;
+        //     x1, x2, x3, x4, y1, y2, y3, y4 = 0;
+        // }
+    }
+});
+
+</script>
+</body>
+</html>
