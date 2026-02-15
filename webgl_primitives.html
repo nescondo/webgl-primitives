@@ -6,7 +6,31 @@
     <title>Lab 1 - Escondo, Nikolai</title>
 </head>
 <body>
-    <canvas id="webgl-canvas" width="500" height="500"></canvas>
+    <div style="columns: 2; position: absolute;">
+        <canvas id="webgl-canvas" width="500" height="500"></canvas>
+        <div style="padding: 2rem; padding-top: 4rem; padding-bottom: 4rem;">
+        <div style="padding-bottom: 1rem;">To change drawing modes, please press one of the key inputs: 
+            <ul>
+                <li>"p" for points</li>
+                <li>"l" for lines</li>
+                <li>"t" for triangles</li>
+                <li>"s" for squares</li>
+                <li>"d" for disks</li>
+            </ul>
+        </div>
+        <div style="padding-bottom: 1rem;">If drawing squares, press keys 1-6 to change the drawing method: 
+            <ul>
+                <li>"1" for gl.TRIANGLES</li>
+                <li>"2" for gl.TRIANGLE_STRIP</li>
+                <li>"3" for gl.TRIANGLE_FAN</li>
+                <li>"4" for gl.LINES</li>
+                <li>"5" for gl.LINE_STRIP</li>
+                <li>"6" for gl.LINE_LOOP</li>
+            </ul>
+        </div>
+        <div>To reset the canvas, please press "r".</div>
+        </div>
+    </div>
 <script>
 // Vertex shader source code
 const vertexShaderSource = `
@@ -31,23 +55,39 @@ const fragmentShaderSource = `
 <script type="text/javascript" src="setupShader.js"></script>
 <script>
 
-// Create buffer
+// add widget for drawing displays
+const container = document.createElement('div');
+container.style.cssText = 'position:absolute;top:10px;left:10px;background:rgba(0,0,0,0.7);padding:10px;color:white;font-family:monospace;';
+
+const modeDisplay = document.createElement('div');
+modeDisplay.id = 'curMode';
+
+const squareDisplay = document.createElement('div');
+squareDisplay.id = 'squareMode';
+
+container.appendChild(modeDisplay);
+container.appendChild(squareDisplay);
+document.body.appendChild(container);
+
+// create buffer
 const buffer = gl.createBuffer();
 gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
 const aPositionLocation = gl.getAttribLocation(program, 'aPosition');
 gl.vertexAttribPointer(aPositionLocation, 2, gl.FLOAT, false, 0, 0);
 gl.enableVertexAttribArray(aPositionLocation);
 
-// Set up the viewport and clear the canvas
+// set up the viewport and clear the canvas
 gl.viewport(0, 0, canvas.width, canvas.height);
 gl.clearColor(0.0, 0.0, 0.0, 1.0);
 gl.clear(gl.COLOR_BUFFER_BIT);
 
 
 function worldToNDC(x, y) {
+    // conversion from world (the canvas) space (0 to 500, 0 to 500) to NDC space (-1 to 1, -1 to 1)
     const ndc_x = ((2 * x) / canvas.width) - 1;
     const ndc_y = -(((2 * y) / canvas.height) - 1);
 
+    // note that I return an array, so x and y values per pair will be accessed at the 0 and 1 indices, respectively
     return [ndc_x, ndc_y];
 }
 
@@ -75,20 +115,6 @@ function render2Points(x1, y1, x2, y2) {
     gl.bufferData(gl.ARRAY_BUFFER, points, gl.STATIC_DRAW);
     gl.drawArrays(gl.POINTS, 0, 2);
 }
-
-// function render3Points(x1, y1, x2, y2, x3, y3) {
-//     gl.clearColor(0.0, 0.0, 0.0, 1.0);
-//     gl.clear(gl.COLOR_BUFFER_BIT);
-
-//     const points = new Float32Array([
-//         x1, y1,
-//         x2, y2,
-//         x3, y3
-//     ]);
-
-//     gl.bufferData(gl.ARRAY_BUFFER, points, gl.STATIC_DRAW);
-//     gl.drawArrays(gl.POINTS, 0, 3);
-// }
 
 function renderLine(x1, y1, x2, y2) {
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
@@ -238,10 +264,43 @@ function renderSquareLLoop(x1, y1, x2, y2, x3, y3, x4, y4) {
     gl.drawArrays(gl.LINE_LOOP, 0, 4);
 }
 
-let mode = "";
+function renderDisk(x1, y1) {
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    // number of points to create/segments - the lower the value, the less smooth the disk is
+    const steps = 100;
+
+    // how big we want the disk to be (less than 1 because NDC space)
+    const radius = 0.25;
+
+    // angle between each point in radians
+    let angle = (Math.PI * 2.0) / steps;
+
+    // can't do append to a fixed sized Float32Array, so will convert to one later
+    let vertices = [x1, y1];
+
+    // calculates each point (step) from the center coordinate (x1, y1)
+    for (let i = 0; i <= steps; i++) {
+        let newX = x1 + radius * Math.sin(angle * i);
+        let newY = y1 + -radius * Math.cos(angle * i);
+        vertices.push(newX, newY);
+    }
+
+    const disk = new Float32Array(vertices);
+    gl.bufferData(gl.ARRAY_BUFFER, disk, gl.STATIC_DRAW);
+    gl.drawArrays(gl.TRIANGLE_FAN, 0, disk.length/2); // each vertex takes an x, y - so divide by 2 for total # vertices
+}
+
+// variables to determine current mode and click state per mode
+let mode = "None";
 let squareMode = "1";
+let numClick = 0; // keeps track of number of clicks to determine if a shape needs to be rendered
+
 const rect = canvas.getBoundingClientRect();
-let numClick = 0;
+
+// show current mode on screen
+modeDisplay.innerHTML = `Current drawing mode: ${mode}`;
 
 // x-axis coords
 let x1 = 0;
@@ -257,22 +316,25 @@ let y3 = 0;
 let y4 = 0;
 let y5 = 0;
 
-// line points
-// let lineX1 = 0;
-// let lineY1 = 0;
-// let lineX2 = 0;
-// let lineY2 = 0;
-
-// triangle points
-// let triX1 = 0;
-// let triY1 = 0;
-// let triX2 = 0;
-// let triY2 = 0;
-// let triX3 = 0;
-// let triY3 = 0;
-
+// event listener for key presses
 document.addEventListener('keydown', (keyEvent) => {
     const keyName = keyEvent.key;
+
+    // reset
+    if (keyName === "r") {
+        gl.clearColor(0.0, 0.0, 0.0, 1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        squareMode = "1";
+        mode = "None";
+    }
+
+    // clears square display when not square drawing is not active
+    if (keyName !== "s" && keyName !== "1" && keyName !== "2" && keyName !== "3" && keyName !== "4" && keyName !== "5" && keyName !== "6") {
+        gl.clearColor(0.0, 0.0, 0.0, 1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        squareDisplay.innerHTML = "";
+    }
+
     if (keyName === "p") {
         mode = "p";
         console.log("pressed p - point drawing mode active");
@@ -297,43 +359,56 @@ document.addEventListener('keydown', (keyEvent) => {
         console.log(`mode: ${mode}`);
     }
 
-    if (keyName === "1") {
-        squareMode = "1";
-        console.log("pressed 1 - square mode now gl.TRIANGLES");
-        console.log(`squareMode: ${squareMode}`);
+    if (mode === "s") {
+        if (keyName === "1") {
+            squareMode = "1";
+            console.log("pressed 1 - square mode now gl.TRIANGLES");
+            console.log(`squareMode: ${squareMode}`);
+        }
+
+        if (keyName === "2") {
+            squareMode = "2";
+            console.log("pressed 2 - square mode now gl.TRIANGLE_STRIP");
+            console.log(`squareMode: ${squareMode}`);
+        }
+
+        if (keyName === "3") {
+            squareMode = "3";
+            console.log("pressed 3 - square mode now gl.TRIANGLE_FAN");
+            console.log(`squareMode: ${squareMode}`);
+        }
+
+        if (keyName === "4") {
+            squareMode = "4";
+            console.log("pressed 4 - square mode now gl.LINES");
+            console.log(`squareMode: ${squareMode}`);
+        }
+
+        if (keyName === "5") {
+            squareMode = "5";
+            console.log("pressed 5 - square mode now gl.LINE_STRIP");
+            console.log(`squareMode: ${squareMode}`);
+        }
+
+        if (keyName === "6") {
+            squareMode = "6";
+            console.log("pressed 6 - square mode now gl.LINE_LOOP");
+            console.log(`squareMode: ${squareMode}`);
+        }
+        squareDisplay.innerHTML = `Current square drawing mode: ${squareMode}`;
     }
 
-    if (keyName === "2") {
-        squareMode = "2";
-        console.log("pressed 2 - square mode now gl.TRIANGLE_STRIP");
-        console.log(`squareMode: ${squareMode}`);
+    if (keyName === "d") {
+        mode = "d";
+        console.log("pressed d - disk drawing mode active");
+        console.log(`mode: ${mode}`);
     }
 
-    if (keyName === "3") {
-        squareMode = "3";
-        console.log("pressed 3 - square mode now gl.TRIANGLE_FAN");
-        console.log(`squareMode: ${squareMode}`);
-    }
-
-    if (keyName === "4") {
-        squareMode = "4";
-        console.log("pressed 4 - square mode now gl.LINES");
-        console.log(`squareMode: ${squareMode}`);
-    }
-
-    if (keyName === "5") {
-        squareMode = "5";
-        console.log("pressed 5 - square mode now gl.LINE_STRIP");
-        console.log(`squareMode: ${squareMode}`);
-    }
-
-    if (keyName === "6") {
-        squareMode = "6";
-        console.log("pressed 6 - square mode now gl.LINE_LOOP");
-        console.log(`squareMode: ${squareMode}`);
-    }
+    // show current mode on screen
+    modeDisplay.innerHTML = `Current drawing mode: ${mode}`;
 });
 
+// event listener for key clicks/mouse down
 canvas.addEventListener('mousedown', (mouseEvent) => {
     const x = mouseEvent.clientX - rect.left;
     const y = mouseEvent.clientY - rect.top;
@@ -343,6 +418,7 @@ canvas.addEventListener('mousedown', (mouseEvent) => {
     if (mode === "p") {
         renderPoint(vertex[0], vertex[1]);
         numClick = 0;
+        x1, y1 = 0;
     }
 
     if (mode === "l") {
@@ -439,51 +515,18 @@ canvas.addEventListener('mousedown', (mouseEvent) => {
             renderSquareLLoop(x2, y2, x3, y3, x4, y4, x5, y5);
         }
 
-        // renderSquareTFan(x1, y1, x2, y2, x3, y3, x4, y4, x5, y5);
-        // renderSquareT(x1, y1, x2, y2, x3, y3, x4, y4, x5, y5);
-        // renderSquareTStrip(x1, y1, x2, y2, x3, y3, x4, y4, x5, y5);
-        // renderSquareLines(x2, y2, x3, y3, x4, y4, x5, y5);
-        // renderSquareLStrip(x2, y2, x3, y3, x4, y4, x5, y5);
-        // renderSquareLLoop(x2, y2, x3, y3, x4, y4, x5, y5);
         numClick = 0;
         x1, x2, x3, y1, y2, y3, x4, y4, x5, y5 = 0;
+    }
 
+    if (mode === "d") {
+        x1 = vertex[0];
+        y1 = vertex[1];
 
+        renderDisk(x1, y1);
 
-        // user defines the 4 vertices themselves
-        // if (numClick === 1) {
-        //     x1 = vertex[0];
-        //     y1 = vertex[1];
-
-        //     renderPoint(x1, y1);
-        //     console.log(`First vertex: ${x1}, ${y1}`);
-        // }
-
-        // if (numClick === 2) {
-        //     x2 = vertex[0];
-        //     y2 = vertex[1];
-
-        //     render2Points(x1, y1, x2, y2);
-        //     console.log(`Second vertex: ${x2}, ${y2}`);
-        // }
-
-        // if (numClick === 3) {
-        //     x3 = vertex[0];
-        //     y3 = vertex[1];
-            
-        //     render3Points(x1, y1, x2, y2, x3, y3);
-        //     console.log(`Third vertex: ${x3}, ${y3}`);
-        // }
-
-        // if (numClick === 4) {
-        //     x4 = vertex[0];
-        //     y4 = vertex[1];
-
-        //     console.log(`Fourth vertex: ${x4}, ${y4}`);
-        //     renderSquare(x1, y1, x2, y2, x3, y3, x4, y4);
-        //     numClick = 0;
-        //     x1, x2, x3, x4, y1, y2, y3, y4 = 0;
-        // }
+        numClick = 0;
+        x1, y1 = 0;
     }
 });
 
