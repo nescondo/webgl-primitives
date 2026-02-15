@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebGL Primitives</title>
+    <title>Lab 1 - Escondo, Nikolai</title>
 </head>
 <body>
     <canvas id="webgl-canvas" width="500" height="500"></canvas>
@@ -117,7 +117,97 @@ function renderTriangle(x1, y1, x2, y2, x3, y3) {
     gl.drawArrays(gl.TRIANGLES, 0, 3);
 }
 
-function renderSquare(x1, y1, x2, y2, x3, y3, x4, y4) {
+function renderSquareT(x1, y1, x2, y2, x3, y3, x4, y4, x5, y5) {
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    const square = new Float32Array([
+        // ABC
+        x1, y1,
+        x2, y2,
+        x3, y3,
+
+        // ACD
+        x1, y1,
+        x3, y3,
+        x4, y4,
+
+        // ADE
+        x1, y1,
+        x4, y4,
+        x5, y5,
+
+        // AEB
+        x1, y1,
+        x5, y5,
+        x2, y2
+    ]);
+
+    gl.bufferData(gl.ARRAY_BUFFER, square, gl.STATIC_DRAW);
+    gl.drawArrays(gl.TRIANGLES, 0, 12);
+}
+
+function renderSquareTStrip(x1, y1, x2, y2, x3, y3, x4, y4, x5, y5) {
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    const square = new Float32Array([
+        x1, y1, // A
+        x2, y2, // B
+        x3, y3, // C
+        x4, y4, // D
+        x5, y5, // E
+        x2, y2, // B
+    ]);
+
+    gl.bufferData(gl.ARRAY_BUFFER, square, gl.STATIC_DRAW);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 6)
+}
+
+function renderSquareTFan(x1, y1, x2, y2, x3, y3, x4, y4, x5, y5) {
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    const square = new Float32Array([
+        x1, y1, // A
+        x2, y2, // B
+        x3, y3, // C
+        x4, y4, // D
+        x5, y5, // E
+        x2, y2, // B
+    ]);
+
+    gl.bufferData(gl.ARRAY_BUFFER, square, gl.STATIC_DRAW);
+    gl.drawArrays(gl.TRIANGLE_FAN, 0, 6);
+}
+
+function renderSquareLines(x1, y1, x2, y2, x3, y3, x4, y4) {
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    const square = new Float32Array([
+        // right line
+        x1, y1,
+        x2, y2,
+
+        // bottom line
+        x2, y2,
+        x3, y3,
+
+        // left line
+        x3, y3,
+        x4, y4,
+
+        // top line
+        x4, y4,
+        x1, y1
+    ]);
+
+    gl.bufferData(gl.ARRAY_BUFFER, square, gl.STATIC_DRAW);
+    gl.drawArrays(gl.LINES, 0, 8);
+}
+
+function renderSquareLStrip(x1, y1, x2, y2, x3, y3, x4, y4) {
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT);
 
@@ -125,14 +215,31 @@ function renderSquare(x1, y1, x2, y2, x3, y3, x4, y4) {
         x1, y1,
         x2, y2,
         x3, y3,
-        x4, y4
+        x4, y4,
+        x1, y1
+    ]);
+
+    gl.bufferData(gl.ARRAY_BUFFER, square, gl.STATIC_DRAW);
+    gl.drawArrays(gl.LINE_STRIP, 0, 5);
+}
+
+function renderSquareLLoop(x1, y1, x2, y2, x3, y3, x4, y4) {
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    const square = new Float32Array([
+        x1, y1,
+        x2, y2,
+        x3, y3,
+        x4, y4,
     ]);
 
     gl.bufferData(gl.ARRAY_BUFFER, square, gl.STATIC_DRAW);
     gl.drawArrays(gl.LINE_LOOP, 0, 4);
 }
 
-let mode = '';
+let mode = "";
+let squareMode = "1";
 const rect = canvas.getBoundingClientRect();
 let numClick = 0;
 
@@ -141,12 +248,14 @@ let x1 = 0;
 let x2 = 0;
 let x3 = 0;
 let x4 = 0;
+let x5 = 0;
 
 // y-axis coords
 let y1 = 0;
 let y2 = 0;
 let y3 = 0;
 let y4 = 0;
+let y5 = 0;
 
 // line points
 // let lineX1 = 0;
@@ -184,8 +293,44 @@ document.addEventListener('keydown', (keyEvent) => {
 
     if (keyName === "s") {
         mode = "s";
-        console.log("pressed t - square drawing mode active");
+        console.log("pressed s - square drawing mode active");
         console.log(`mode: ${mode}`);
+    }
+
+    if (keyName === "1") {
+        squareMode = "1";
+        console.log("pressed 1 - square mode now gl.TRIANGLES");
+        console.log(`squareMode: ${squareMode}`);
+    }
+
+    if (keyName === "2") {
+        squareMode = "2";
+        console.log("pressed 2 - square mode now gl.TRIANGLE_STRIP");
+        console.log(`squareMode: ${squareMode}`);
+    }
+
+    if (keyName === "3") {
+        squareMode = "3";
+        console.log("pressed 3 - square mode now gl.TRIANGLE_FAN");
+        console.log(`squareMode: ${squareMode}`);
+    }
+
+    if (keyName === "4") {
+        squareMode = "4";
+        console.log("pressed 4 - square mode now gl.LINES");
+        console.log(`squareMode: ${squareMode}`);
+    }
+
+    if (keyName === "5") {
+        squareMode = "5";
+        console.log("pressed 5 - square mode now gl.LINE_STRIP");
+        console.log(`squareMode: ${squareMode}`);
+    }
+
+    if (keyName === "6") {
+        squareMode = "6";
+        console.log("pressed 6 - square mode now gl.LINE_LOOP");
+        console.log(`squareMode: ${squareMode}`);
     }
 });
 
@@ -249,7 +394,60 @@ canvas.addEventListener('mousedown', (mouseEvent) => {
     }
 
     if (mode === "s") {
-        // TO-DO: user defines only center point of square
+        // user defines only center point of square
+        x1 = vertex[0];
+        y1 = vertex[1];
+        console.log(`A (HUB): ${x1}, ${y1}`);
+
+        x2 = vertex[0] + 0.25;
+        y2 = vertex[1] + 0.25;
+        console.log(`B: ${x2}, ${y2}`);
+
+        x3 = vertex[0] + 0.25;
+        y3 = vertex[1] - 0.25;
+        console.log(`C: ${x3}, ${y3}`);
+
+        x4 = vertex[0] - 0.25;
+        y4 = vertex[1] - 0.25;
+        console.log(`D ${x4}, ${y4}`);
+
+        x5 = vertex[0] - 0.25;
+        y5 = vertex[1] + 0.25;
+        console.log(`E: ${x5}, ${y5}`);
+
+        if (squareMode === "1") {
+            renderSquareT(x1, y1, x2, y2, x3, y3, x4, y4, x5, y5);
+        }
+
+        if (squareMode === "2") {
+            renderSquareTStrip(x1, y1, x2, y2, x3, y3, x4, y4, x5, y5);
+        }
+
+        if (squareMode === "3") {
+            renderSquareTFan(x1, y1, x2, y2, x3, y3, x4, y4, x5, y5);
+        }
+
+        if (squareMode === "4") {
+            renderSquareLines(x2, y2, x3, y3, x4, y4, x5, y5);
+        }
+
+        if (squareMode === "5") {
+            renderSquareLStrip(x2, y2, x3, y3, x4, y4, x5, y5);
+        }
+
+        if (squareMode === "6") {
+            renderSquareLLoop(x2, y2, x3, y3, x4, y4, x5, y5);
+        }
+
+        // renderSquareTFan(x1, y1, x2, y2, x3, y3, x4, y4, x5, y5);
+        // renderSquareT(x1, y1, x2, y2, x3, y3, x4, y4, x5, y5);
+        // renderSquareTStrip(x1, y1, x2, y2, x3, y3, x4, y4, x5, y5);
+        // renderSquareLines(x2, y2, x3, y3, x4, y4, x5, y5);
+        // renderSquareLStrip(x2, y2, x3, y3, x4, y4, x5, y5);
+        // renderSquareLLoop(x2, y2, x3, y3, x4, y4, x5, y5);
+        numClick = 0;
+        x1, x2, x3, y1, y2, y3, x4, y4, x5, y5 = 0;
+
 
 
         // user defines the 4 vertices themselves
