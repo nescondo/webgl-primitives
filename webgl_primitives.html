@@ -333,6 +333,7 @@ document.addEventListener('keydown', (keyEvent) => {
         gl.clearColor(0.0, 0.0, 0.0, 1.0);
         gl.clear(gl.COLOR_BUFFER_BIT);
         squareDisplay.innerHTML = "";
+        squareMode = "1";
     }
 
     if (keyName === "p") {
@@ -350,6 +351,12 @@ document.addEventListener('keydown', (keyEvent) => {
     if (keyName === "t") {
         mode = "t";
         console.log("pressed t - triangle drawing mode active");
+        console.log(`mode: ${mode}`);
+    }
+
+    if (keyName === "d") {
+        mode = "d";
+        console.log("pressed d - disk drawing mode active");
         console.log(`mode: ${mode}`);
     }
 
@@ -396,12 +403,6 @@ document.addEventListener('keydown', (keyEvent) => {
             console.log(`squareMode: ${squareMode}`);
         }
         squareDisplay.innerHTML = `Current square drawing mode: ${squareMode}`;
-    }
-
-    if (keyName === "d") {
-        mode = "d";
-        console.log("pressed d - disk drawing mode active");
-        console.log(`mode: ${mode}`);
     }
 
     // show current mode on screen
