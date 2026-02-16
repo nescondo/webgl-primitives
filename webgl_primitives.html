@@ -329,7 +329,7 @@ document.addEventListener('keydown', (keyEvent) => {
     }
 
     // clears square display when not square drawing is not active
-    if (keyName !== "s" && keyName !== "1" && keyName !== "2" && keyName !== "3" && keyName !== "4" && keyName !== "5" && keyName !== "6") {
+    if (keyName !== "1" && keyName !== "2" && keyName !== "3" && keyName !== "4" && keyName !== "5" && keyName !== "6") {
         gl.clearColor(0.0, 0.0, 0.0, 1.0);
         gl.clear(gl.COLOR_BUFFER_BIT);
         squareDisplay.innerHTML = "";
